@@ -79,7 +79,7 @@
 
 <br/>
 
-3. ** Implementation Considerations**
+3. **Implementation Considerations**
     1. timeliness
 
         by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
