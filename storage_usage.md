@@ -56,37 +56,106 @@
 
 2. **The Optimization Plan**
 
-    in summary, using the checkpoint process, we can save CN's performance. 
+    in summary, using the checkpoint process, we can save CN's performance.
+    <br>
+    <br>
 
-    given a timestamp, checkpoint increasingly collects all dirty blocks before that time, so we also could record the table size and row counts changing increasingly, we only need to add an extra batch to ckp, like:
-
-    ```Go
-    type TableMetaCKp struct {
-      entries []struct {
-        accountId uint64
-        databaseId uint64
-        tableId uint64
-        rowDelta int64
-        sizeDelta int64
-      }
-      // ...
-    }
+    **Checkpoint Overview**
+    ```vim
+    catalog
+    |
+    ---------------------------------------------------------
+            |               |               |       ...
+         db_entry        db_entry        db_entry
+                           |
+                           |
+                          ----------------------------------------
+                                    |        |         |     ...
+                                tb_entry  tb_entry  tb_entr
+                                    |
+                                    |
+                                   --------------------------------
+                                            |         |        ...
+                                        seg_entry  seg_entry
+                                            |
+                                            |
+                     ------------------------------------------------------------
+                            |       |         |       |        |      |       |
+                           blk     blk       blk     blk      blk    blk     blk
+    
+                       |---------------|    |-----------|    |--------------------|
+                       s1    ckp1     e2    s2   ckp2   e2   s3      ckp3        e3
+    
+               | ---------------------------------------|
+               -∞             global ckp                e2
     ```
 
-    in a global checkpoint, it retains all storage usage info for all accounts as of the creation of that global checkpoint.
+Whenever a block is created or deleted, its metadata is recorded in the catalog. 
+The checkpoint runner periodically collects this metadata and logs it in the checkpoint.
 
-    when users want to know the storage usage of any of an account, the dn sends a list of checkpoints, composed of the global checkpoint and all increment checkpoints after it, to cn and then it calculates the final result.
+In incremental checkpoints, there are very few pieces of metadata that are empty because 
+some block data has not been flushed (logged in the log service). When combined with the global checkpoint, 
+the metadata that was not accounted for promptly is further reduced.
+    
+**Implementation Detail**
+
+so we also could record the table size and row counts changing increasingly, 
+we only need to add two extra batches to ckp, like:
+   
+ ```Go
+    type BlkAccInsBatch struct {
+        // { accout_id, database_id, table_id, location }
+	    Attrs   []string 
+	    Vecs    []Vector
+	    //...
+    }
+
+    type BlkAccDelBatch struct {
+        // { accout_id, database_id, table_id, location }
+	    Attrs   []string 
+	    Vecs    []Vector
+	    //...
+    }
+```    
+
+when the user wants to know its storage usage, it requests CN --> TN, 
+and TN returns a global ckp and a list of incremental checkpoints. 
+the CN needs to decode these batches stored in checkpoints and combine them with the writes in memory.
+the codes like:
+```python
+for ckp in [global_ckp, incremental_ckps] {
+    for ins_bat in ckp {
+        size[ins_bat[acc_id]] += ins_bat.location.length
+        rows[ins_bat[acc_id]] += ins_bat.location.rows
+    }
+    
+    for del_bat in ckp {
+        size[ins_bat[acc_id]] -= ins_bat.location.length
+        rows[ins_bat[acc_id]] -= ins_bat.location.rows
+    }
+}
+    
+for data in memory_writes {
+    if data.type == del {
+        continue
+    }
+    size[ins_bat[acc_id]] += ins_bat.location.length
+    rows[ins_bat[acc_id]] += ins_bat.location.rows
+}    
+    
+```
 
 <br/>
 
 3. **Implementation Considerations**
     1. timeliness
-
-        by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
-    2. cost
-
+       by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
+   
+       and ckp is also constrained by the minimal updates count restrict
+     2. cost
         through this approach, can circumvent `join` and subscription, by adding a little complication to ckp.
     3. trigger condition
-
-        need a new way to request cn for storage usage statistics after discarding `show accounts`. the `select mo_ctl` is a candidate, but lacks of authentication method.
+        need a new way to request cn for storage usage statistics after discarding `show accounts`.
+   
+        candidate: `mo_ctl`
 
