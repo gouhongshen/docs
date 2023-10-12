@@ -125,13 +125,13 @@ the codes like:
 ```python
 for ckp in [global_ckp, incremental_ckps] {
     for ins_bat in ckp {
-        size[ins_bat[acc_id]] += ins_bat.location.length
-        rows[ins_bat[acc_id]] += ins_bat.location.rows
+        size[ins_bat.acc_id] += ins_bat.location.length
+        rows[ins_bat.acc_id] += ins_bat.location.rows
     }
     
     for del_bat in ckp {
-        size[ins_bat[acc_id]] -= ins_bat.location.length
-        rows[ins_bat[acc_id]] -= ins_bat.location.rows
+        size[del_bat.acc_id] -= del_bat.location.length
+        rows[del_bat.acc_id] -= del_bat.location.rows
     }
 }
     
@@ -139,8 +139,8 @@ for data in memory_writes {
     if data.type == del {
         continue
     }
-    size[ins_bat[acc_id]] += ins_bat.location.length
-    rows[ins_bat[acc_id]] += ins_bat.location.rows
+    size[data.acc_id] += data.location.length
+    rows[data.acc_id] += data.location.rows
 }    
     
 ```
@@ -154,8 +154,8 @@ for data in memory_writes {
        and ckp is also constrained by the minimal updates count restrict
      2. cost
         through this approach, can circumvent `join` and subscription, by adding a little complication to ckp.
-    3. trigger condition
-        need a new way to request cn for storage usage statistics after discarding `show accounts`.
+    3. The trigger condition
+        needs a new way to request cn for storage usage statistics after discarding `show accounts`.
    
         candidate: `mo_ctl`
 
