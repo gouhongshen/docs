@@ -86,7 +86,7 @@
                        |---------------|    |-----------|    |--------------------|
                        s1    ckp1     e2    s2   ckp2   e2   s3      ckp3        e3
     
-               | ---------------------------------------|
+               |----------------------------------------|
                -∞             global ckp                e2
     ```
 
@@ -149,12 +149,17 @@ for data in memory_writes {
 
 3. **Implementation Considerations**
     1. timeliness
+
        by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
    
        and ckp is also constrained by the minimal updates count restrict
-     2. cost
+       
+     3. cost
+        
         through this approach, can circumvent `join` and subscription, by adding a little complication to ckp.
-    3. The trigger condition
+        
+    5. The trigger condition
+   
         needs a new way to request cn for storage usage statistics after discarding `show accounts`.
    
         candidate: `mo_ctl`
