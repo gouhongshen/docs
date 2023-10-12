@@ -51,6 +51,17 @@
     the cost depends on the number of accounts and how many tables an account has:
       1. the `join` operation could be time-consuming
       2. massive subscriptions could degrade CN performance
+   ```vim
+   mo_table_size
+   mo_table_rows
+    |
+    |
+    |-- tb_1  --
+    |-- tb_2     \
+    |-- tb_3       ====> UpdateBlockInfos ===> SubscribeTable
+    |            /
+    |-- tb_n  --
+   ```
 
 <br/>
 
@@ -82,10 +93,8 @@
                      ------------------------------------------------------------
                             |       |         |       |        |      |       |
                            blk     blk       blk     blk      blk    blk     blk
-    
                        |---------------|    |-----------|    |--------------------|
                        s1    ckp1     e2    s2   ckp2   e2   s3      ckp3        e3
-    
                |----------------------------------------|
                -∞             global ckp                e2
     ```
