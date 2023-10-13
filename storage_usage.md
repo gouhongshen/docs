@@ -1,5 +1,30 @@
+1. **Background**
 
-1. **The Current Implementation**
+   **Where does the `show accounts` cmd come from?**
+   1. internal
+
+      the CN MetricStorageUsage cron task gathers any new accounts every minute and all accounts every 15 minutes, and then writes them in metrics.
+      but this cron task only exists in exactly one CN. 
+      
+   3. users
+
+      users can launch `show accounts` from the SQL client at any time.
+
+   **Who has the access right?**
+   1. system account:
+
+      at every minute, the sys account executes `show accounts like xxx` to collect storage usage of newly added accounts.
+
+      at every 15 minutes, the sys account executes `show accounts` to collect storage usage of all accounts
+      
+   3. normal account:
+
+      any normal accounts can launch `show accounts` SQL, the effect equals to the sys account executes `show accounts like xxx`. 
+
+<br>
+<br>
+
+2. **The Current Implementation**
    
     using `show accounts` to get all storage usage info for all accounts.
 
@@ -18,9 +43,23 @@
 
     **How does ****`show accounts`**** work?**
 
-    after the user launches `show accounts`, mo starts a transaction and steps into a loop to execute SQL to get table info for each account. 
+    after the frontend receives `show accounts`, it starts a transaction.
 
-    built-in functions `mo_table_rows` and `mo_table_size` have been used by these functions, which first subscribes tables from TN, and then calculates rows and size from block metadata and in-memory writes.
+    the first step is to get related account info:
+   
+   ```SQL
+   SELECT
+   	account_id AS `account_id`,
+    	account_name AS `account_name`,
+    	created_time AS `created`,
+    	status AS `status`,
+    	suspended_time AS `suspended_time`,
+    	comments AS `comment`
+   FROM
+    	mo_catalog.mo_account %s;
+   ``` 
+
+    for every account, it uses the built-in functions `mo_table_rows` and `mo_table_size` to get account storage usage info, and then calculates the results with in-memory writes to get the final result.
 
     ```SQL
     SELECT
@@ -39,14 +78,13 @@
                 mo_catalog.mo_user
         ) AS mu1 ON mu2.user_id = mu1.min_user_id
     JOIN
-        mo_catalog.mo_user AS mu2 ON /* join condition for mu2 */
+        mo_catalog.mo_user AS mu2 ON 
     WHERE
-        mt.relkind != '%s'
-        AND mt.account_id = %d;
-    
+        mt.relkind != '%s' AND mt.account_id = %d;
     ```
+<br>
 
-    **How much does the ****`show accounts`**** cost?**
+**How much does the `show accounts` cost?**
 
     the cost depends on the number of accounts and how many tables an account has:
       1. the `join` operation could be time-consuming
@@ -105,7 +143,9 @@ The checkpoint runner periodically collects this metadata and logs it in the che
 In incremental checkpoints, there are very few pieces of metadata that are empty because 
 some block data has not been flushed (logged in the log service). When combined with the global checkpoint, 
 the metadata that was not accounted for promptly is further reduced.
-    
+
+<br>
+
 **Implementation Detail**
 
 so we also could record the table size and row counts changing increasingly, 
@@ -113,14 +153,14 @@ we only need to add two extra batches to ckp, like:
    
  ```Go
     type BlkAccInsBatch struct {
-        // { accout_id, database_id, table_id, location }
+        // { accout_id, database_id, table_id, rows, size }
 	    Attrs   []string 
 	    Vecs    []Vector
 	    //...
     }
 
     type BlkAccDelBatch struct {
-        // { accout_id, database_id, table_id, location }
+        // { accout_id, database_id, table_id, rows, size }
 	    Attrs   []string 
 	    Vecs    []Vector
 	    //...
@@ -153,23 +193,44 @@ for data in memory_writes {
 }    
     
 ```
+<br>
+
+**Interface Compaitable**:
+
+```Go
+func getTableStats(ctx context.Context, bh *BackgroundHandler, accountId int32) (res *batch.Batch, err error)
+
+// res batch
+type Batch struct {
+    // admin_name	// comes from mo_catalog.mo_user
+    // db_count		// comes from ckp
+    // table_account	// comes from ckp
+    // row_count	// comes from ckp
+    // size (MB)	// comes from ckp
+    Attrs []string
+
+    Vecs  []*vector.Vector
+}
+```
+* admin_name 
+
 
 <br/>
 
-3. **Implementation Considerations**
+3. **Others Considerations**
     1. timeliness
 
        by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
    
        and ckp is also constrained by the minimal updates count restrict
+
+    2. cost
+        
+        * time: 1) decode serval ckps; 2) query mo_catalog.mo_user table.
+        * space: need extra 4B + 8B + 8B + 4B + 4B = 28B for each blk update record in ckp
+
+    3. accurate
+
+       incremental ckp may be missing a few block update records since these blocks have not flushed.
        
-     3. cost
-        
-        through this approach, can circumvent `join` and subscription, by adding a little complication to ckp.
-        
-    5. The trigger condition
-   
-        needs a new way to request cn for storage usage statistics after discarding `show accounts`.
-   
-        candidate: `mo_ctl`
 
