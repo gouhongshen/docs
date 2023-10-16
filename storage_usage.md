@@ -26,10 +26,9 @@
 
 <br>
 
-   **Size & Rows**
-   * in memory, uncommitted
-   * in memory, committed
-   * persisted data
+   **Storage Usage Definition**
+
+   we only consider these data that are ready to flush to remote or already persistent in remote.
 
 <br>
 <br>
