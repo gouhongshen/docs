@@ -1,5 +1,8 @@
 1. **Background**
 
+![image](https://github.com/gouhongshen/docs/assets/26336316/024759e9-e1e9-4106-8913-100b70af2b2a)
+
+
    **Where does the `show accounts` cmd come from?**
    1. internal
 
@@ -197,12 +200,17 @@ for data in memory_writes {
 
 **Interface Compaitable**:
 
+result interface
 ```Go
-func getTableStats(ctx context.Context, bh *BackgroundHandler, accountId int32) (res *batch.Batch, err error)
-
 // res batch
 type Batch struct {
+    // account_name     // mo_catalog.mo_account
     // admin_name	// comes from mo_catalog.mo_user
+    // created          // mo_catalog.mo_account
+    // status           // mo_catalog.mo_account
+    // suspendedTime    // mo_catalog.mo_account
+    // comment          // mo_catalog.mo_account
+
     // db_count		// comes from ckp
     // table_account	// comes from ckp
     // row_count	// comes from ckp
@@ -212,7 +220,10 @@ type Batch struct {
     Vecs  []*vector.Vector
 }
 ```
-* admin_name 
+
+**Handle Pipeline**
+* we can use the logtail pull pipeline
+* we can use the debug pipeline (dedicated for mo_ctl)
 
 
 <br/>
