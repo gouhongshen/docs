@@ -22,7 +22,14 @@
       
    3. normal account:
 
-      any normal accounts can launch `show accounts` SQL, the effect equals to the sys account executes `show accounts like xxx`. 
+      any normal accounts can launch `show accounts` SQL, the effect equals to the sys account executes `show accounts like xxx`.
+
+<br>
+
+   **Size & Rows**
+   * in memory, uncommitted
+   * in memory, committed
+   * persisted data
 
 <br>
 <br>
@@ -223,8 +230,18 @@ type Batch struct {
 
 **Handle Pipeline**
 * we can use the logtail pull pipeline
-* we can use the debug pipeline (dedicated for mo_ctl)
+  ```
+  OpCode_OpGetLogTail
 
+  type SyncLogTailResp struct {
+    CkpLocation
+    Commands
+  }
+  ```
+* we can use the debug pipeline (dedicated for mo_ctl)
+```
+TxnMethod_DEBUG
+```
 
 <br/>
 
