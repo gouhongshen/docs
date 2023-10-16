@@ -204,15 +204,15 @@ result interface
 ```Go
 // res batch
 type Batch struct {
-    // account_name     // mo_catalog.mo_account
-    // admin_name	// comes from mo_catalog.mo_user
-    // created          // mo_catalog.mo_account
-    // status           // mo_catalog.mo_account
-    // suspendedTime    // mo_catalog.mo_account
-    // comment          // mo_catalog.mo_account
+    // account_name     
+    // admin_name	
+    // created          
+    // status           
+    // suspendedTime    
+    // comment
+    // db_count	
+    // table_account	// join mo_user, mo_tables, mo_account
 
-    // db_count		// comes from ckp
-    // table_account	// comes from ckp
     // row_count	// comes from ckp
     // size (MB)	// comes from ckp
     Attrs []string
