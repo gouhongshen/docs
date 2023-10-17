@@ -10,7 +10,7 @@
 
       users can launch `show accounts` from the SQL client at any time.
 
-<br>
+    <br>
 
    **Who has the access right?**
    1. system account:
@@ -23,7 +23,7 @@
 
       any normal accounts can launch `show accounts` SQL, the effect equals to the sys account executes `show accounts like xxx`.
 
-<br>
+    <br>
 
    **Storage Usage Definition**
 
@@ -52,9 +52,9 @@
     +--------------+------------+---------------------+--------+----------------+----------+-------------+-----------+----------+----------------+
     4 rows in set (0.03 sec)
     ```
-<br>
+    <br>
 
-**How does ****`show accounts`**** work?**
+    **How does ****`show accounts`**** work?**
 
     after the frontend receives `show accounts`, it starts a transaction.
 
@@ -95,9 +95,9 @@
     WHERE
         mt.relkind != '%s' AND mt.account_id = %d;
     ```
-<br>
+    <br>
 
-**How much does the `show accounts` cost?**
+    **How much does the `show accounts` cost?**
 
     the cost depends on the number of accounts and how many tables an account has:
       1. the `join` operation could be time-consuming
@@ -175,7 +175,7 @@ we only need to add two extra batches to ckp, like:
 
 when the user wants to know its storage usage, it requests CN --> TN, 
 and TN returns a global ckp and a list of incremental checkpoints. 
-the CN needs to decode these batches stored in checkpoints and combine them with the writes in memory.
+the CN needs to decode these batches stored in checkpoints and combine them with the blocks that are ready to flush.
 the codes like:
 ```python
 for ckp in [global_ckp, incremental_ckps] {
@@ -218,7 +218,7 @@ type Batch struct {
 <br>
 
 **Handle Pipeline**
-* we can use the logtail pull pipeline
+* we can use the log tail pull pipeline
   ```
   OpCode_OpGetLogTail
   ```
@@ -230,8 +230,8 @@ type Batch struct {
  
  ```
  type SyncLogTailResp struct {
-    CkpLocation
-    Commands
+    CkpLocation []Location
+    Commands    []BlockEntry
  }
  ```
 
