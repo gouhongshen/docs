@@ -1,9 +1,5 @@
 1. **Background**
 
-![image](https://github.com/gouhongshen/docs/assets/26336316/024759e9-e1e9-4106-8913-100b70af2b2a)
-
-<br>
-
    **Where does the `show accounts` cmd come from?**
    1. internal
 
@@ -36,6 +32,10 @@
 <br>
 <br>
 
+![image](https://github.com/gouhongshen/docs/assets/26336316/024759e9-e1e9-4106-8913-100b70af2b2a)
+
+<br>
+
 2. **The Current Implementation**
    
     using `show accounts` to get all storage usage info for all accounts.
@@ -54,7 +54,7 @@
     ```
 <br>
 
-    **How does ****`show accounts`**** work?**
+**How does ****`show accounts`**** work?**
 
     after the frontend receives `show accounts`, it starts a transaction.
 
