@@ -116,7 +116,7 @@
 
 <br/>
 
-2. **The Optimization Plan**
+3. **The Optimization Plan**
 
     in summary, using the checkpoint process, we can save CN's performance.
     <br>
@@ -231,9 +231,9 @@ type Batch struct {
  }
  ```
 
-<br/>
+  <br/>
 
-3. **Others Considerations**
+ **Others Considerations**
     1. timeliness
 
        by default, will schedule increment ckp each 5s and global ckp each 100 increment ckps have done.
