@@ -153,16 +153,12 @@
 Whenever a block is created or deleted, its metadata is recorded in the catalog. 
 The checkpoint runner periodically collects this metadata and logs it in the checkpoint.
 
-In incremental checkpoints, there are very few pieces of metadata that are empty because 
-some block data has not been flushed (logged in the log service). When combined with the global checkpoint, 
-the metadata that was not accounted for promptly is further reduced.
-
 <br>
 
 **Implementation Detail**
 
 so we also could record the table size and row counts changing increasingly, 
-we only need to add two extra batches to ckp, like:
+we only need to add an extra batch to ckp, like:
    
  ```Go
     type BlkAccBatch struct {
