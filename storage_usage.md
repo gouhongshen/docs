@@ -2,6 +2,7 @@
 
 ![image](https://github.com/gouhongshen/docs/assets/26336316/024759e9-e1e9-4106-8913-100b70af2b2a)
 
+<br>
 
    **Where does the `show accounts` cmd come from?**
    1. internal
@@ -12,6 +13,8 @@
    3. users
 
       users can launch `show accounts` from the SQL client at any time.
+
+<br>
 
    **Who has the access right?**
    1. system account:
@@ -49,6 +52,7 @@
     +--------------+------------+---------------------+--------+----------------+----------+-------------+-----------+----------+----------------+
     4 rows in set (0.03 sec)
     ```
+<br>
 
     **How does ****`show accounts`**** work?**
 
@@ -211,6 +215,7 @@ type Batch struct {
     Vecs  []*vector.Vector
 }
 ```
+<br>
 
 **Handle Pipeline**
 * we can use the logtail pull pipeline
