@@ -236,7 +236,7 @@ type Batch struct {
 3. **Others Considerations**
     1. timeliness
 
-       by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
+       by default, will schedule increment ckp each 5s and global ckp each 100 increment ckps have done.
    
        and ckp is also constrained by the minimal updates count restriction.
 
@@ -246,10 +246,11 @@ type Batch struct {
 
     3. cost
         
-        * time: 1) decode serval ckps; 2) query mo_catalog.mo_user table.
+        * time: 1) decode serval ckps; 2) join 3 system tables.
         * space: need extra 4B + 8B + 8B + 4B + 4B = 28B for each blk update record in ckp
 
     4. accurate
-	we only consider blocks that are already flushed to the remote.
+       
+	we only consider blocks that are already flushed to the remote or ready to flush.
        
 
