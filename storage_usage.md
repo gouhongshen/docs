@@ -161,14 +161,7 @@ so we also could record the table size and row counts changing increasingly,
 we only need to add two extra batches to ckp, like:
    
  ```Go
-    type BlkAccInsBatch struct {
-        // { accout_id, database_id, table_id, rows, size }
-	    Attrs   []string 
-	    Vecs    []Vector
-	    //...
-    }
-
-    type BlkAccDelBatch struct {
+    type BlkAccBatch struct {
         // { accout_id, database_id, table_id, rows, size }
 	    Attrs   []string 
 	    Vecs    []Vector
@@ -182,23 +175,15 @@ the CN needs to decode these batches stored in checkpoints and combine them with
 the codes like:
 ```python
 for ckp in [global_ckp, incremental_ckps] {
-    for ins_bat in ckp {
-        size[ins_bat.acc_id] += ins_bat.location.length
-        rows[ins_bat.acc_id] += ins_bat.location.rows
-    }
-    
-    for del_bat in ckp {
-        size[del_bat.acc_id] -= del_bat.location.length
-        rows[del_bat.acc_id] -= del_bat.location.rows
+    for bat in ckp {
+        size[bat.acc_id] += bat.size
+        rows[bat.acc_id] += bat.rows
     }
 }
     
-for data in memory_writes {
-    if data.type == del {
-        continue
-    }
-    size[data.acc_id] += data.location.length
-    rows[data.acc_id] += data.location.rows
+for blk in blk_not_checkpoint_yet {
+    size[data.acc_id] += data.size
+    rows[data.acc_id] += data.rows
 }    
     
 ```
@@ -231,16 +216,19 @@ type Batch struct {
 * we can use the logtail pull pipeline
   ```
   OpCode_OpGetLogTail
-
-  type SyncLogTailResp struct {
-    CkpLocation
-    Commands
-  }
   ```
 * we can use the debug pipeline (dedicated for mo_ctl)
-```
-TxnMethod_DEBUG
-```
+  ```
+  TxnMethod_DEBUG
+  ```
+
+ 
+ ```
+ type SyncLogTailResp struct {
+    CkpLocation
+    Commands
+ }
+ ```
 
 <br/>
 
@@ -249,15 +237,18 @@ TxnMethod_DEBUG
 
        by default, will do increment ckp each minute and global ckp each 100 increment ckps have done.
    
-       and ckp is also constrained by the minimal updates count restrict
+       and ckp is also constrained by the minimal updates count restriction.
 
-    2. cost
+       but we can scan the catalog to collect block metadata that has not been checkpoint.
+
+       we are trying to update storage usage info every minute.
+
+    3. cost
         
         * time: 1) decode serval ckps; 2) query mo_catalog.mo_user table.
         * space: need extra 4B + 8B + 8B + 4B + 4B = 28B for each blk update record in ckp
 
-    3. accurate
-
-       incremental ckp may be missing a few block update records since these blocks have not flushed.
+    4. accurate
+	we only consider blocks that are already flushed to the remote.
        
 
