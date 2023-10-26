@@ -161,8 +161,8 @@ so we also could record the table size and row counts changing increasingly,
 we only need to add an extra batch to ckp, like:
    
  ```Go
-    type BlkAccBatch struct {
-        // { accout_id, database_id, table_id, rows, size }
+    type AccountInfoBatch struct {
+        // { accout_id, database_id, table_id, table_total_flushed_size }
 	    Attrs   []string 
 	    Vecs    []Vector
 	    //...
@@ -177,13 +177,11 @@ the codes like:
 for ckp in [global_ckp, incremental_ckps] {
     for bat in ckp {
         size[bat.acc_id] += bat.size
-        rows[bat.acc_id] += bat.rows
     }
 }
     
 for blk in blk_not_checkpoint_yet {
     size[data.acc_id] += data.size
-    rows[data.acc_id] += data.rows
 }    
     
 ```
@@ -204,7 +202,6 @@ type Batch struct {
     // db_count	
     // table_account	// join mo_user, mo_tables, mo_account
 
-    // row_count	// comes from ckp
     // size (MB)	// comes from ckp
     Attrs []string
 
@@ -242,12 +239,12 @@ type Batch struct {
 
        but we can scan the catalog to collect block metadata that has not been checkpoint.
 
-       we are trying to update storage usage info every minute.
+       we are trying to update storage usage info every 5 minutes.
 
     3. cost
         
         * time: 1) decode serval ckps; 2) join 3 system tables.
-        * space: need extra 4B + 8B + 8B + 4B + 4B = 28B for each blk update record in ckp
+        * space: need extra 8B + 8B + 8B + 8B = 32B for each blk update record in ckp
 
     4. accurate
        
