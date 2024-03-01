@@ -160,7 +160,8 @@ for _, id := range ids {
 SELECT 
 	ma.account_name, 
 	ma.admin_name,
-	ma.account_id, COUNT(DISTINCT md.dat_id) as db_count, 
+	ma.account_id,
+	COUNT(DISTINCT md.dat_id) as db_count, 
 	COUNT(DISTINCT mt.rel_id) as tbl_count,
 	...
 FROM 
